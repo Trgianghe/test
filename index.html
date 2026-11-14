@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Lyric Effect Component - macOS Style</title>
+    <style>
+        /* Reset & Dark background chung */
+        body {
+            background-color: #18181A;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* Khung cài đặt mẫu */
+        .setting-card {
+            background: #232326;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 16px 20px;
+            width: 480px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .setting-info .setting-title {
+            font-size: 14px;
+            font-weight: 500;
+            display: block;
+        }
+
+        .setting-info .setting-desc {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.45);
+            margin-top: 2px;
+            display: block;
+        }
+
+        /* Wrapper & Nút bấm không viền chuẩn macOS */
+        .setting-control-wrapper {
+            position: relative;
+        }
+
+        .select-btn {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: rgba(255, 255, 255, 0.9);
+            padding: 6px 10px;
+            margin-right: -10px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13.5px;
+            font-weight: 400;
+            transition: background 0.18s ease, color 0.18s ease;
+        }
+
+        .select-btn:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: #ffffff;
+        }
+
+        .select-btn.active {
+            background: rgba(255, 255, 255, 0.09);
+            color: #ffffff;
+        }
+
+        .chevron-icon {
+            color: rgba(255, 255, 255, 0.45);
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.18s ease;
+        }
+
+        .select-btn:hover .chevron-icon,
+        .select-btn.active .chevron-icon {
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .select-btn.active .chevron-icon {
+            transform: rotate(180deg); /* Xoay dọc mũi tên xuống thành hướng lên khi mở */
+        }
+
+        /* Bảng Popover kính mờ macOS */
+        .mac-popover {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            width: 160px;
+            background: rgba(36, 36, 40, 0.85);
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 6px;
+            z-index: 999;
+            
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(0.92) translateY(-6px);
+            transform-origin: top right;
+            transition: opacity 0.16s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.16s;
+        }
+
+        .mac-popover.show {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1) translateY(0);
+        }
+
+        /* Các lựa chọn bên trong */
+        .popover-item {
+            position: relative;
+            padding: 9px 12px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.85);
+            border-radius: 7px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 2;
+            transition: color 0.15s;
+        }
+
+        .popover-item:hover {
+            color: #fff;
+        }
+
+        .popover-item svg {
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.15s;
+        }
+
+        .popover-item.selected svg {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Thanh chọn màu xanh trượt mượt (Pill) - Dùng vị trí động */
+        .popover-pill {
+            position: absolute;
+            left: 6px;
+            right: 6px;
+            background: #0A84FF;
+            border-radius: 7px;
+            z-index: 1;
+            transition: top 0.18s cubic-bezier(0.2, 0, 0, 1), height 0.18s cubic-bezier(0.2, 0, 0, 1);
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        .mac-popover.show .popover-pill {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="setting-card">
+        <div class="setting-info">
+            <span class="setting-title">Lyric effect</span>
+            <span class="setting-desc">Choose Original, Sweep or Spotlight</span>
+        </div>
+        
+        <div class="setting-control-wrapper" id="lyricWrapper">
+            <button class="select-btn" id="lyricBtn">
+                <span id="lyricValue">Original</span>
+                <!-- Icon mũi tên xuống dạng thanh mảnh chuẩn macOS -->
+                <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 9l6 6 6-6"/>
+                </svg>
+            </button>
+            
+            <div class="mac-popover" id="lyricPopover">
+                <div class="popover-pill" id="popoverPill"></div>
+                <div class="popover-item selected" data-value="Original">
+                    <span>Original</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <div class="popover-item" data-value="Sweep">
+                    <span>Sweep</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <div class="popover-item" data-value="Spotlight">
+                    <span>Spotlight</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const lyricBtn = document.getElementById('lyricBtn');
+        const lyricPopover = document.getElementById('lyricPopover');
+        const lyricValue = document.getElementById('lyricValue');
+        const popoverItems = lyricPopover.querySelectorAll('.popover-item');
+        const popoverPill = document.getElementById('popoverPill');
+
+        // Tính toán vị trí và chiều cao động của thanh xanh theo từng item để tuyệt đối không bị lệch/tràn
+        function movePill(item) {
+            popoverPill.style.top = item.offsetTop + 'px';
+            popoverPill.style.height = item.offsetHeight + 'px';
+        }
+
+        lyricBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = lyricPopover.classList.toggle('show');
+            lyricBtn.classList.toggle('active', isOpen);
+            
+            if (isOpen) {
+                const currentSelected = lyricPopover.querySelector('.popover-item.selected') || popoverItems[0];
+                movePill(currentSelected);
+            }
+        });
+
+        popoverItems.forEach(item => {
+            item.addEventListener('mouseenter', () => {
+                movePill(item);
+            });
+            
+            item.addEventListener('click', () => {
+                popoverItems.forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+                lyricValue.textContent = item.dataset.value;
+                lyricPopover.classList.remove('show');
+                lyricBtn.classList.remove('active');
+            });
+        });
+
+        // Click ra ngoài thì đóng menu
+        document.addEventListener('click', () => {
+            lyricPopover.classList.remove('show');
+            lyricBtn.classList.remove('active');
+        });
+
+        // Tự động đóng menu khi lăn chuột
+        window.addEventListener('scroll', () => {
+            lyricPopover.classList.remove('show');
+            lyricBtn.classList.remove('active');
+        }, true);
+    </script>
+</body>
+</html>
